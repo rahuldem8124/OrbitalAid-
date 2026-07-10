@@ -1,0 +1,6 @@
+fastapi
+uvicorn
+sqlalchemy
+pandas
+sgp4
+python-dotenv
