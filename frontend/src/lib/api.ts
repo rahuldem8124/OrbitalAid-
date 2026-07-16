@@ -7,7 +7,7 @@ import {
   StatsSummary,
 } from "./types";
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+export const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
 export async function fetchStats(): Promise<StatsSummary> {
   const res = await fetch(`${API_BASE_URL}/stats/summary`);
@@ -129,5 +129,15 @@ export async function acknowledgeAlert(
     body: JSON.stringify({ acknowledged_by: acknowledgedBy }),
   });
   if (!res.ok) throw new Error("Failed to acknowledge alert");
+  return res.json();
+}
+
+export async function fetchConjunctionExplain(
+  eventId: string
+): Promise<{ explanation: string }> {
+  const res = await fetch(`${API_BASE_URL}/conjunctions/${eventId}/explain`, {
+    method: "POST",
+  });
+  if (!res.ok) throw new Error("Failed to fetch explanation");
   return res.json();
 }

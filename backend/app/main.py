@@ -12,12 +12,14 @@ from app.api.routes import router
 
 app = FastAPI(title="OrbitalAid API", version="0.1.0")
 
-# CORS: Next.js dev server runs on a different port than this API, so the
-# browser blocks requests by default without this. Update allow_origins
-# when deploying somewhere other than localhost.
+# Allows local dev (localhost:3000) and the deployed Vercel frontend.
+# allow_origin_regex covers Vercel's per-deployment preview URLs too
+# (e.g. orbital-aid-gngh-<hash>-rahuls-projects....vercel.app), not just
+# the main production domain.
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["http://localhost:3000"],
+    allow_origin_regex=r"https://orbital-aid.*\.vercel\.app",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
