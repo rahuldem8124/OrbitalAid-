@@ -16,6 +16,8 @@ from pydantic import BaseModel
 from app.db import SessionLocal
 from app.models.models import SpaceObject, ConjunctionEvent, RiskAssessment, Maneuver, Alert
 from app.propagation.propagator import propagate_object
+from app.simulation.simulator import screen_new_object, simulate_maneuver
+from app.analytics.analytics import risk_tier_distribution, altitude_distribution, response_time_metrics
 
 router = APIRouter()
 
@@ -108,17 +110,6 @@ def get_object_positions(
     limit: int = Query(300, le=2000),
     at: str | None = Query(None, description="ISO timestamp, defaults to now (UTC)"),
 ):
-    """
-    Real SGP4-propagated positions for the 3D globe, replacing the previous
-    placeholder (array index + random offset) positions. Returns raw
-    position in km, Earth-centered inertial (TEME) frame — the frontend
-    scales this to render units and picks its own axis mapping.
-
-    Objects with propagation errors (e.g. decayed orbits, bad elements) are
-    silently skipped and counted in `skipped` rather than failing the whole
-    request — with a 300-2000 object sample, a handful of bad elements is
-    expected and shouldn't break the visualization.
-    """
     session = SessionLocal()
     try:
         when = datetime.fromisoformat(at) if at else datetime.now(timezone.utc)
@@ -297,7 +288,6 @@ def acknowledge_alert_endpoint(alert_id: str, ack: AlertAcknowledgement):
 
 @router.get("/stats/summary")
 def stats_summary():
-    """Powers the Command Overview KPI strip: object counts, active risk, pending actions."""
     session = SessionLocal()
     try:
         total_objects = session.query(SpaceObject).count()
@@ -320,3 +310,57 @@ def stats_summary():
         }
     finally:
         session.close()
+
+
+# ---------- simulation ----------
+
+class OrbitalElementsInput(BaseModel):
+    name: str = "SIMULATED-OBJECT"
+    mean_motion: float
+    eccentricity: float
+    inclination: float
+    ra_of_asc_node: float
+    arg_of_pericenter: float
+    mean_anomaly: float
+    bstar: float = 0.0
+    mean_motion_dot: float = 0.0
+    mean_motion_ddot: float = 0.0
+
+
+class ManeuverSimulationInput(BaseModel):
+    asset_id: str
+    threat_id: str
+    delta_v_mps: float
+
+
+@router.post("/simulations/new-object")
+def simulate_new_object_endpoint(input: OrbitalElementsInput):
+    try:
+        return screen_new_object(input.model_dump(exclude={"name"}), name=input.name)
+    except ValueError as e:
+        raise HTTPException(400, str(e))
+
+
+@router.post("/simulations/maneuver")
+def simulate_maneuver_endpoint(input: ManeuverSimulationInput):
+    try:
+        return simulate_maneuver(input.asset_id, input.threat_id, input.delta_v_mps)
+    except ValueError as e:
+        raise HTTPException(400, str(e))
+
+
+# ---------- analytics ----------
+
+@router.get("/analytics/risk-distribution")
+def analytics_risk_distribution(status: str = Query("active")):
+    return risk_tier_distribution(status)
+
+
+@router.get("/analytics/altitude-distribution")
+def analytics_altitude_distribution(type: str | None = Query(None)):
+    return altitude_distribution(type)
+
+
+@router.get("/analytics/response-times")
+def analytics_response_times():
+    return response_time_metrics()

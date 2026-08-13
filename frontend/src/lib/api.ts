@@ -5,6 +5,9 @@ import {
   Maneuver,
   Alert,
   StatsSummary,
+  NewObjectSimulationResult,
+  ManeuverSimulationResult,
+  ResponseTimeMetrics,
 } from "./types";
 
 export const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
@@ -139,5 +142,64 @@ export async function fetchConjunctionExplain(
     method: "POST",
   });
   if (!res.ok) throw new Error("Failed to fetch explanation");
+  return res.json();
+}
+
+export async function simulateNewObject(elements: {
+  name?: string;
+  mean_motion: number;
+  eccentricity: number;
+  inclination: number;
+  ra_of_asc_node: number;
+  arg_of_pericenter: number;
+  mean_anomaly: number;
+  bstar?: number;
+}): Promise<NewObjectSimulationResult> {
+  const res = await fetch(`${API_BASE_URL}/simulations/new-object`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(elements),
+  });
+  if (!res.ok) throw new Error("Simulation failed");
+  return res.json();
+}
+
+export async function simulateManeuver(input: {
+  asset_id: string;
+  threat_id: string;
+  delta_v_mps: number;
+}): Promise<ManeuverSimulationResult> {
+  const res = await fetch(`${API_BASE_URL}/simulations/maneuver`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(input),
+  });
+  if (!res.ok) throw new Error("Maneuver simulation failed");
+  return res.json();
+}
+
+export async function fetchRiskDistribution(
+  status?: string
+): Promise<Record<string, number>> {
+  const params = new URLSearchParams();
+  if (status) params.set("status", status);
+  const res = await fetch(`${API_BASE_URL}/analytics/risk-distribution?${params.toString()}`);
+  if (!res.ok) throw new Error("Failed to fetch risk distribution");
+  return res.json();
+}
+
+export async function fetchAltitudeDistribution(
+  type?: string
+): Promise<{ bins: Record<string, number>; skipped_no_elements: number; total: number }> {
+  const params = new URLSearchParams();
+  if (type) params.set("type", type);
+  const res = await fetch(`${API_BASE_URL}/analytics/altitude-distribution?${params.toString()}`);
+  if (!res.ok) throw new Error("Failed to fetch altitude distribution");
+  return res.json();
+}
+
+export async function fetchResponseTimes(): Promise<ResponseTimeMetrics> {
+  const res = await fetch(`${API_BASE_URL}/analytics/response-times`);
+  if (!res.ok) throw new Error("Failed to fetch response times");
   return res.json();
 }

@@ -68,3 +68,45 @@ export interface StatsSummary {
   pending_maneuvers: number;
   unacknowledged_alerts: number;
 }
+
+export interface SimulationResultItem {
+  object_name: string;
+  object_type: string;
+  miss_distance_km: number;
+  tca: string;
+  relative_velocity_kmps: number;
+  pc: number;
+  risk_tier: RiskTier;
+}
+
+export interface NewObjectSimulationResult {
+  simulated_object: string;
+  candidates_checked: number;
+  conjunctions_found: number;
+  results: SimulationResultItem[];
+}
+
+export interface ManeuverSimulationResult {
+  asset: string;
+  threat: string;
+  current_miss_distance_km: number;
+  current_pc: number;
+  current_risk_tier: RiskTier;
+  applied_delta_v_mps: number;
+  predicted_new_miss_distance_km: number;
+  predicted_new_pc: number;
+  predicted_new_risk_tier: RiskTier;
+}
+
+export interface ResponseTimeMetrics {
+  alert_acknowledgement: {
+    count: number;
+    avg_seconds: number | null;
+    median_seconds: number | null;
+  };
+  maneuver_decision: {
+    count: number;
+    avg_seconds: number | null;
+    median_seconds: number | null;
+  };
+}
