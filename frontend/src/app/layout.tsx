@@ -1,8 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-import Sidebar from "@/components/layout/Sidebar";
-import TopBar from "@/components/layout/TopBar";
+import LayoutWrapper from "@/components/layout/LayoutWrapper";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -15,8 +14,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "OrbitalAid — Command Center",
-  description: "Satellite debris collision risk analysis and preventive measures",
+  title: "OrbitAid — Orbital Surveillance & Conjunction Operations",
+  description: "Mission Control system for space situational awareness",
 };
 
 export default function RootLayout({
@@ -29,12 +28,10 @@ export default function RootLayout({
       lang="en"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <body className="min-h-full bg-[#05070d]">
-        <Sidebar />
-        <div className="flex flex-col min-h-full ml-16">
-          <TopBar />
-          <main className="flex-1 overflow-y-auto p-6">{children}</main>
-        </div>
+      <body className="min-h-full bg-[var(--bg-space)] text-[var(--text-primary)]">
+        <LayoutWrapper>
+          {children}
+        </LayoutWrapper>
       </body>
     </html>
   );

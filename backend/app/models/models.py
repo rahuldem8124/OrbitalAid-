@@ -162,5 +162,38 @@ class Alert(Base):
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
     acknowledged_by = Column(String, nullable=True)
     acknowledged_at = Column(DateTime, nullable=True)
+    
+    resolved_by = Column(String, nullable=True)
+    resolved_at = Column(DateTime, nullable=True)
 
     conjunction_event = relationship("ConjunctionEvent", back_populates="alerts")
+
+
+class EventLog(Base):
+    __tablename__ = 'event_logs'
+    id = Column(String, primary_key=True, default=new_uuid)
+    conjunction_event_id = Column(String, ForeignKey('conjunction_events.id'), nullable=True)
+    action = Column(String, nullable=False)
+    actor = Column(String, default='system')
+    timestamp = Column(DateTime, default=datetime.utcnow)
+    details = Column(String, nullable=True)
+    
+    conjunction_event = relationship('ConjunctionEvent')
+
+
+class SystemSettings(Base):
+    __tablename__ = 'system_settings'
+    id = Column(Integer, primary_key=True, default=1)
+    screening_distance_km = Column(Float, default=5.0)
+    screening_time_window_hours = Column(Integer, default=24)
+    auto_screening = Column(Boolean, default=True)
+    screening_frequency_minutes = Column(Integer, default=60)
+    data_refresh_interval_minutes = Column(Integer, default=30)
+    risk_critical_threshold = Column(Float, default=1e-4)
+    risk_high_threshold = Column(Float, default=1e-5)
+    risk_watch_threshold = Column(Float, default=1e-6)
+    alert_enabled = Column(Boolean, default=True)
+    alert_critical_enabled = Column(Boolean, default=True)
+    alert_high_enabled = Column(Boolean, default=True)
+    alert_watch_enabled = Column(Boolean, default=True)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)

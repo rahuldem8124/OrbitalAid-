@@ -1,64 +1,129 @@
 import {
   fetchStats,
-  fetchConjunctions,
   fetchAlerts,
   fetchManeuvers,
   fetchObjectPositions,
+  fetchSystemHealth,
+  fetchConjunctionAnalytics,
+  fetchConjunctionsPaginated,
 } from "@/lib/api";
-import KPIStrip from "@/components/dashboard/KPIStrip";
 import Globe from "@/components/dashboard/Globe";
-import RiskList from "@/components/dashboard/RiskList";
 import ActivityFeed from "@/components/dashboard/ActivityFeed";
+import LiveConjunctionWatch from "@/components/dashboard/LiveConjunctionWatch";
+import QuickStats from "@/components/dashboard/QuickStats";
+import MetricCard from "@/components/shared/MetricCard";
+import SystemHealthIndicator from "@/components/shared/SystemHealthIndicator";
+import ErrorState from "@/components/shared/ErrorState";
+import LiveClock from "@/components/dashboard/LiveClock";
+import { Satellite, AlertTriangle, ShieldAlert, Bell, Activity } from "lucide-react";
 
-// Always fetch fresh data on each request rather than caching at build
-// time — this dashboard is only useful if the numbers are current.
 export const dynamic = "force-dynamic";
 
 export default async function Home() {
   try {
-    const [stats, conjunctionsRes, alertsRes, maneuversRes, positionsRes] =
-      await Promise.all([
-        fetchStats(),
-        fetchConjunctions("active"),
-        fetchAlerts(),
-        fetchManeuvers(),
-        // Real SGP4-propagated positions for 300 objects, not all 17,724 —
-        // rendering every tracked object as a mesh would be too heavy for now.
-        fetchObjectPositions(undefined, 300),
-      ]);
+    const [stats, health, analytics, conjunctionsRes, alertsRes, maneuversRes, positionsRes] = await Promise.all([
+      fetchStats(),
+      fetchSystemHealth(),
+      fetchConjunctionAnalytics(),
+      fetchConjunctionsPaginated({ per_page: 8, sort_by: 'tca', sort_order: 'asc' }),
+      fetchAlerts(),
+      fetchManeuvers(),
+      fetchObjectPositions(undefined, 300),
+    ]);
+
+    const criticalRisks = analytics.by_risk_tier?.critical || 0;
 
     return (
-      <div className="flex flex-col gap-6">
-        <KPIStrip stats={stats} />
-
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-[600px]">
-          <div className="lg:col-span-2 h-full">
-            <Globe positions={positionsRes.positions} />
+      <div className="flex flex-col gap-6 min-h-screen grid-overlay">
+        {/* Header Section */}
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-end border-b border-[#1e293b] pb-4">
+          <div>
+            <h1 className="text-2xl md:text-3xl font-bold text-[#e2e8f0] tracking-tight">MISSION CONTROL</h1>
+            <p className="text-[#94a3b8] text-sm mt-1">Orbital Surveillance & Conjunction Operations</p>
           </div>
-          <div className="h-full">
-            <RiskList conjunctions={conjunctionsRes.conjunctions} />
+          <div className="flex flex-col items-end gap-2 mt-4 md:mt-0">
+            <div className="flex items-center gap-4 bg-[#111827] border border-[#1e293b] px-4 py-2 rounded-lg">
+              <SystemHealthIndicator status={health.status === 'healthy' ? 'online' : health.status === 'degraded' ? 'degraded' : 'offline'} label="SYSTEM" />
+              <div className="w-px h-4 bg-[#1e293b]"></div>
+              <LiveClock />
+            </div>
+            {health.data_freshness && (
+              <span className="text-xs text-[#64748b]">Data Freshness: {health.data_freshness}</span>
+            )}
           </div>
         </div>
 
-        <div className="h-[400px]">
-          <ActivityFeed alerts={alertsRes.alerts} maneuvers={maneuversRes.maneuvers} />
+        {/* KPI Strip */}
+        <div className="grid grid-cols-1 md:grid-cols-3 xl:grid-cols-6 gap-4">
+          <MetricCard 
+            label="Objects Tracked" 
+            value={stats.total_objects} 
+            icon={<Satellite className="w-5 h-5" />} 
+          />
+          <MetricCard 
+            label="Active Conjunctions" 
+            value={stats.active_conjunctions} 
+            icon={<Activity className="w-5 h-5" />} 
+          />
+          <MetricCard 
+            label="Critical Risks" 
+            value={criticalRisks} 
+            variant={criticalRisks > 0 ? "critical" : "default"}
+            icon={<AlertTriangle className="w-5 h-5" />} 
+          />
+          <MetricCard 
+            label="Active Alerts" 
+            value={stats.unacknowledged_alerts} 
+            variant={stats.unacknowledged_alerts > 0 ? "warning" : "default"}
+            icon={<Bell className="w-5 h-5" />} 
+          />
+          <MetricCard 
+            label="Pending Maneuvers" 
+            value={stats.pending_maneuvers} 
+            icon={<ShieldAlert className="w-5 h-5" />} 
+          />
+          <MetricCard 
+            label="System Status" 
+            value={health.status.toUpperCase()}
+            variant={health.status === 'healthy' ? 'success' : health.status === 'degraded' ? 'warning' : 'critical'}
+          />
+        </div>
+
+        {/* Main Content (2-column layout on desktop) */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-[600px]">
+          {/* Left: 3D Globe */}
+          <div className="lg:col-span-2 h-full bg-[#111827] border border-[#1e293b] rounded-xl overflow-hidden p-1 relative">
+            <div className="absolute top-4 left-4 z-10 pointer-events-none">
+              <h2 className="text-[#2dd4bf] font-mono text-sm tracking-widest font-semibold bg-[#111827]/80 px-2 py-1 rounded">ORBITAL VIEW</h2>
+            </div>
+            <Globe positions={positionsRes.positions} />
+          </div>
+
+          {/* Right: Live Conjunction Watch */}
+          <div className="h-full">
+            <LiveConjunctionWatch conjunctions={conjunctionsRes.items} />
+          </div>
+        </div>
+
+        {/* Bottom Section */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 h-[400px]">
+          <div className="h-full bg-[#111827] border border-[#1e293b] rounded-xl overflow-hidden">
+             <ActivityFeed alerts={alertsRes.alerts} maneuvers={maneuversRes.maneuvers} />
+          </div>
+          <div className="h-full">
+            <QuickStats analytics={analytics} />
+          </div>
         </div>
       </div>
     );
   } catch (err) {
+    console.error("Dashboard fetch error:", err);
     return (
-      <div className="flex items-center justify-center h-full">
-        <div className="text-center">
-          <p className="text-red-400 font-semibold mb-2">
-            Could not reach the OrbitalAid backend.
-          </p>
-          <p className="text-white/50 text-sm">
-            Make sure it&apos;s running at{" "}
-            <code className="text-cyan-400">http://localhost:8000</code>{" "}
-            (<code className="text-cyan-400">py -m uvicorn app.main:app --reload --port 8000</code>)
-            and refresh this page.
-          </p>
-        </div>
+      <div className="h-full flex items-center justify-center pt-20">
+        <ErrorState 
+          title="Mission Control Offline" 
+          message="Could not connect to the OrbitalAid backend. Ensure the server is running at http://localhost:8000."
+        />
       </div>
     );
   }

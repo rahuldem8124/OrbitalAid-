@@ -33,3 +33,7 @@ node_modules/
 dist/
 build/
 .next/
+# Large assets
+data.zip
+docs/
+ml/
