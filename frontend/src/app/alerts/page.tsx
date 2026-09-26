@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useState, useMemo } from "react";
-import { Alert, fetchAlertsPaginated, fetchAlerts, acknowledgeAlert, resolveAlert } from "@/lib/api";
+import { Alert } from "@/lib/types";
+import { fetchAlertsPaginated, fetchAlerts, acknowledgeAlert, resolveAlert } from "@/lib/api";
 import MetricCard from "@/components/shared/MetricCard";
 import FilterBar from "@/components/shared/FilterBar";
 import DataTable from "@/components/shared/DataTable";
