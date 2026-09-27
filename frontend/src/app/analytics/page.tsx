@@ -240,7 +240,7 @@ export default function AnalyticsPage() {
               <BarChart data={riskData} layout="vertical" margin={{ top: 5, right: 20, left: 20, bottom: 5 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" horizontal={false} />
                 <XAxis type="number" tick={{ fill: "#94a3b8", fontSize: 11 }} axisLine={{ stroke: "rgba(255,255,255,0.1)" }} tickLine={false} />
-                <YAxis type="category" dataKey="tier" tick={{ fill: "#94a3b8", fontSize: 11, textTransform: "uppercase" }} axisLine={{ stroke: "rgba(255,255,255,0.1)" }} tickLine={false} width={80} />
+                <YAxis type="category" dataKey="tier" tick={{ fill: "#94a3b8", fontSize: 11 }} axisLine={{ stroke: "rgba(255,255,255,0.1)" }} tickLine={false} width={80} />
                 <Tooltip 
                   contentStyle={{ backgroundColor: "#111827", borderColor: "#1e293b", color: "#f8fafc" }}
                   cursor={{ fill: 'rgba(255,255,255,0.05)' }}
@@ -293,7 +293,7 @@ export default function AnalyticsPage() {
                   outerRadius={90}
                   paddingAngle={5}
                   dataKey="value"
-                  label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                  label={({ name, percent }: { name: string; percent?: number }) => `${name} ${((percent ?? 0) * 100).toFixed(0)}%`}
                   labelLine={false}
                 >
                   {conjunctionStatusData.map((entry, index) => (

@@ -29,9 +29,9 @@ export default function AlertsPage() {
 
   // Load paginated table data
   useEffect(() => {
-    let unacknowledged_only = undefined;
-    if (filters.status === 'active') unacknowledged_only = true;
-    
+    const unacknowledged_only: boolean | undefined =
+      filters.status === 'active' ? true : undefined;
+
     setLoading(true);
     fetchAlertsPaginated({
       page,
@@ -40,16 +40,14 @@ export default function AlertsPage() {
       unacknowledged_only,
       search: filters.search || undefined,
     }).then(res => {
-      // In a real scenario with proper API support, we wouldn't need client filtering.
-      // However, since API lacks 'acknowledged_only', we filter if needed.
-      let finalItems = res.items;
+      let finalItems: Alert[] = res.items;
       if (filters.status === 'acknowledged') {
-        finalItems = finalItems.filter(a => a.acknowledged_by);
+        finalItems = finalItems.filter((a: Alert) => a.acknowledged_by);
       }
       setAlerts(finalItems);
-      setTotal(res.total); // Total might be slightly off if we client-filtered, but it's acceptable for this scope.
+      setTotal(res.total);
       setLoading(false);
-    }).catch(err => {
+    }).catch((err: unknown) => {
       console.error(err);
       setLoading(false);
     });
@@ -58,11 +56,11 @@ export default function AlertsPage() {
   const stats = useMemo(() => {
     return {
       total: allAlertsForStats.length,
-      unacknowledged: allAlertsForStats.filter(a => !a.acknowledged_by).length,
-      critical: allAlertsForStats.filter(a => a.severity === 'critical').length,
-      high: allAlertsForStats.filter(a => a.severity === 'high').length,
-      watch: allAlertsForStats.filter(a => a.severity === 'watch').length,
-      acknowledged: allAlertsForStats.filter(a => a.acknowledged_by).length,
+      unacknowledged: allAlertsForStats.filter((a: Alert) => !a.acknowledged_by).length,
+      critical: allAlertsForStats.filter((a: Alert) => a.severity === 'critical').length,
+      high: allAlertsForStats.filter((a: Alert) => a.severity === 'high').length,
+      watch: allAlertsForStats.filter((a: Alert) => a.severity === 'watch').length,
+      acknowledged: allAlertsForStats.filter((a: Alert) => a.acknowledged_by).length,
     };
   }, [allAlertsForStats]);
 

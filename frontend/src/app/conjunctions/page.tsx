@@ -512,7 +512,7 @@ export default function ConjunctionsPage() {
                 <h3 className="text-[#2dd4bf] font-medium uppercase tracking-wider text-sm">Event Timeline</h3>
               </div>
               <div className="bg-[#1a2332] p-4 rounded-lg border border-[#1e293b]">
-                <Timeline events={timeline} />
+                <Timeline events={timeline.map(e => ({ action: e.action, actor: e.actor, timestamp: e.timestamp, details: e.details ?? undefined }))} />
               </div>
             </div>
           </div>
